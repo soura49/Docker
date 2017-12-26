@@ -1,4 +1,4 @@
-FROM amazonlinux:latest
+FROM centos:latest
 RUN mkdir -p /Poc/Dependencies
 COPY jdk-8u151-linux-x64 /local
 RUN ln -s jdk1.8.0_25 /local/jdk1.8.0_25
