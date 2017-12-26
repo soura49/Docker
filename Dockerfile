@@ -6,4 +6,3 @@ RUN export JAVA_HOME=/local/jdk1.8.0_25
 RUN export JRE_HOME=/local/jdk1.8.0_25/jre
 RUN export PATH=$PATH:/local/jdk1.8.0_25/bin:/local/jdk1.8.0_25/jre/bin
 COPY S3folder_name /Poc/Dependencies/
-
