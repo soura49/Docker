@@ -40,7 +40,7 @@
                 }
             ],
             "VPCZoneIdentifier":[
-                "Subnet-510a7009"
+                "Subnet-xxxxx"
             ]
         }
     },
@@ -119,7 +119,7 @@
             "IamInstacnceProfile" : "xxxxx-iamrole",
             "ImageId" : "ami-dfadsf",
             "SecurityGroups": [
-                "sg-fdc44286","sg-344a6952"
+                "sg-xxxxx","sg-xxxxxx"
             ],
             "UserData" : {
                 "Fn::Base64" : {
