@@ -39,21 +39,21 @@ pipeline {
         }
         stage('Subnet'){
             steps{
-                sh 'python scripts/env_baseec2_setup.py'
+                //sh 'python scripts/env_baseec2_setup.py'
             }
         }        
         stage('FileVariables'){            
             steps{               
                 script{
                     def workspace = env.WORKSPACE
-                    def path_to_script = '/EJAV_JOB.variables'
+                    //def path_to_script = '/EJAV_JOB.variables'
                     def new_path = workspace + path_to_script
                     def file = new File(new_path)
                     def lines = file.readLines()
                     println lines
                     withEnv(lines){
                         sh 'env'
-                        vzAWS_CF_CICD_V2 awsenv: 'NONPROD', parameter: '', playbook: '', region: '$AWS_REGION', role: 'App', stackName: '$StackName', stashBranch: 'ecs', stashUrl: 'ssh://onestash.verizon.com:7999/ejavb/ejav.git', templateName: 'cloudformation/vzw_ejav_ecs.json', templateParameter: '{"Environment":"${ENVIRONMENT}","InstanceType":"${TYPE}","AMI":"${AMIID}","AWSAccount":"VZW","SUBNET":"${SUBNET}","AWSAccount":"VZW","Role":"App","AppID":"EJAV","SecurityGroupIds":"${SECGROUPS}"}'
+                        //vzAWS_CF_CICD_V2 awsenv: 'NONPROD', parameter: '', playbook: '', region: '$AWS_REGION', role: 'App', stackName: '$StackName', stashBranch: 'ecs', stashUrl: 'ssh://onestash.verizon.com:7999/ejavb/ejav.git', templateName: 'cloudformation/vzw_ejav_ecs.json', templateParameter: '{"Environment":"${ENVIRONMENT}","InstanceType":"${TYPE}","AMI":"${AMIID}","AWSAccount":"VZW","SUBNET":"${SUBNET}","AWSAccount":"VZW","Role":"App","AppID":"EJAV","SecurityGroupIds":"${SECGROUPS}"}'
                     }
                 }
             }
@@ -62,14 +62,14 @@ pipeline {
             steps{
                 script{
                     sh 'python scripts/getServerFromStack.py -s ${StackName}'
-                    def path_new_script = '/ConfigureHost.variables'
+                    //def path_new_script = '/ConfigureHost.variables'
                     def hpsa_file = workspace + path_new_script
                     def hps_file = new File(hpsa_file)
                     def env_vars = file.readLines()
                     println env_vars
                     withEnv(env_vars){
                         sh 'env'
-                        vzAnsiblePlusPlaybookExtendedPipelineParallel env: 'AWS', os: 'Linux', parameter: '', password: '', playbook: '$Playbook', servers: '$server', stashBranch: 'ecs', stashUrl:'$StashRepoUrl' , username: '$Account'
+                        //vzAnsiblePlusPlaybookExtendedPipelineParallel env: 'AWS', os: 'Linux', parameter: '', password: '', playbook: '$Playbook', servers: '$server', stashBranch: 'ecs', stashUrl:'$StashRepoUrl' , username: '$Account'
                     }
                 }
             }
