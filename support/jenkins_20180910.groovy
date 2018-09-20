@@ -1,5 +1,3 @@
-import java.io.File
-
 pipeline {
     agent{
         node{label 'EJAV'}
@@ -19,10 +17,13 @@ pipeline {
 
         string(name: 'AMIID', defaultValue: 'ami-XXXXXXXX', description: 'Please use only centos')
 
-        string(name: 'Playbook', defaultValue: 'playbooks/hold_for_hpsa.yml', description: 'Playbook excute the hpsa module')
+        string(name: 'Playbook', defaultValue: 'playbooks/ebs_volume.yml', description: 'Playbook excute the hpsa module')
+        
+        string(name: 'HPSA', defaultValue: 'playbooks/hold_for_hpsa.yml', description: 'Playbook excute the hpsa module')
 
         string(name: 'Stashrepourl', defaultValue: 'ssh://onestash.verizon.com:7999/ejavb/ejav.git', description: 'Repo url')
     
+        string(name: 'Volsize', defaultValue: '50', description: 'Size of the EBS Volume')
     }
     stages{
         stage('Configuration'){
@@ -32,47 +33,68 @@ pipeline {
         }
         stage('Checkout'){
             steps{
-                git branch: 'ecs',
+                git branch: 'sinni9n_changes',
                 credentialsId: '262c7dbe-f30a-4cce-bfb9-6be823ac7d6a',
-                url: 'ssh://onestash.verizon.com:7999/ejavb/ejav.git'
+                url: 'ssh://git@onestash.verizon.com:7999/ejavb/ejav.git'
             }
         }
-        stage('Subnet'){
+        stage('FileVariables'){
             steps{
-                //sh 'python scripts/env_baseec2_setup.py'
+                sh 'python scripts/env_baseec2_setup.py'
             }
         }        
-        stage('FileVariables'){            
+        stage('EC2'){  
             steps{               
                 script{
+                    input message: 'Please Select the Action to be Performed', parameters: [choice(choices: ['Create', 'Rehydrate'], description: 'Please select one of the action', name: 'Action')]
                     def workspace = env.WORKSPACE
-                    //def path_to_script = '/EJAV_JOB.variables'
+                    def path_to_script = '/EJAV_JOB.variables'
                     def new_path = workspace + path_to_script
-                    def file = new File(new_path)
-                    def lines = file.readLines()
+                    def lines = readFile(new_path)
                     println lines
-                    withEnv(lines){
+                    def lines_variables = lines.tokenize()
+                    println lines_variables
+                    withEnv(lines_variables){
                         sh 'env'
-                        //vzAWS_CF_CICD_V2 awsenv: 'NONPROD', parameter: '', playbook: '', region: '$AWS_REGION', role: 'App', stackName: '$StackName', stashBranch: 'ecs', stashUrl: 'ssh://onestash.verizon.com:7999/ejavb/ejav.git', templateName: 'cloudformation/vzw_ejav_ecs.json', templateParameter: '{"Environment":"${ENVIRONMENT}","InstanceType":"${TYPE}","AMI":"${AMIID}","AWSAccount":"VZW","SUBNET":"${SUBNET}","AWSAccount":"VZW","Role":"App","AppID":"EJAV","SecurityGroupIds":"${SECGROUPS}"}'
+                        //vzAWS_CF_CICD_V2 awsenv: 'NONPROD', parameter: '', playbook: '', region: 'us-west-2', role: 'App', stackName: '$StackName', stashBranch: 'sinni9n_changes', stashUrl: 'ssh://onestash.verizon.com:7999/ejavb/ejav.git', templateName: 'cloudformation/vzw_ejav_ecs.json', templateParameter: '{"Volsize":"${Volsize}","Environment":"${ENVIRONMENT}","InstanceType":"${TYPE}","AMI":"${AMIID}","AWSAccount":"VZW","SUBNET":"subnet-edfb9d8a","AWSAccount":"VZW","Role":"App","AppID":"EJAV","SecurityGroupIds":"sg-c0db25ba,sg-74a0d30f,sg-95c52cee"}'
                     }
                 }
             }
         }
-        stage('HPSA Scanning'){
+        stage('HPSA Registration'){
             steps{
                 script{
                     sh 'python scripts/getServerFromStack.py -s ${StackName}'
-                    //def path_new_script = '/ConfigureHost.variables'
+                    def path_new_script = '/ConfigureHost.variables'
                     def hpsa_file = workspace + path_new_script
-                    def hps_file = new File(hpsa_file)
-                    def env_vars = file.readLines()
-                    println env_vars
-                    withEnv(env_vars){
+                    def hpsa_variables = readFile(hpsa_file)
+                    println hpsa_variables
+                    def hpsa_variables_changed = hpsa_variables.tokenize()
+                    println hpsa_variables_changed
+                    withEnv(hpsa_variables_changed){
                         sh 'env'
-                        //vzAnsiblePlusPlaybookExtendedPipelineParallel env: 'AWS', os: 'Linux', parameter: '', password: '', playbook: '$Playbook', servers: '$server', stashBranch: 'ecs', stashUrl:'$StashRepoUrl' , username: '$Account'
+                        //vzAnsiblePlusPlaybookExtendedPipelineParallel env: 'AWS', os: 'Linux', parameter: '', password: '', playbook: "${params.HPSA}", servers: "${Server}", stashBranch: 'sinni9n_changes', stashUrl:'ssh://onestash.verizon.com:7999/ejavb/ejav.git' , username: "${params.Account}"
                     }
                 }
             }
         }
+        stage('Ansible Plybook execution'){
+            steps{
+                script{
+                    sh 'python scripts/getServerFromStack.py -s ${StackName}'
+                    def path_new_script = '/ConfigureHost.variables'
+                    def hpsa_file = workspace + path_new_script
+                    def hpsa_variables = readFile(hpsa_file)
+                    println hpsa_variables
+                    def hpsa_variables_changed = hpsa_variables.tokenize()
+                    println hpsa_variables_changed
+                    withEnv(hpsa_variables_changed){
+                        sh 'env'
+                        //vzAnsiblePlusPlaybookExtendedPipelineParallel env: 'AWS', os: 'Linux', parameter: '', password: '', playbook: "${params.Playbook}", servers: "${Server}", stashBranch: 'sinni9n_changes', stashUrl:'ssh://onestash.verizon.com:7999/ejavb/ejav.git' , username: "${params.Account}"
+                    }
+                }
+            }
+        }
+
     }
-}
+} 
